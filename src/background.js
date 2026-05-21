@@ -40,7 +40,7 @@ user can demand a popup before any IP addresses are available.
 if (chrome.runtime.getManifest().background.service_worker) {
   // This only runs on Chrome.
   // Firefox uses manifest.json/background/scripts instead.
-  importScripts("iputil.js", "common.js");
+  importScripts("iputil.js", "common.js", "rules.js");
 }
 
 // Possible states for an instance of TabInfo.
@@ -58,6 +58,91 @@ const NAME_VERSION = (() => {
   const m = chrome.runtime.getManifest();
   return `${m.name} v${m.version}`;
 })();
+
+// === RULES ===
+// Cached compiled rules and match meaning, kept in sync with chrome.storage.local.
+let rulesCompiled = [];
+let rulesMatchMeaning = DEFAULT_MATCH_MEANING;
+
+// Pre-rendered ImageData for the colored icons, keyed by `${size}:${color}:${pattern}`.
+const ruleIconCache = new Map();
+
+async function loadRulesFromStorage() {
+  try {
+    const items = await chrome.storage.local.get([RULES_COMPILED, RULES_MATCH_MEANING]);
+    rulesCompiled = items[RULES_COMPILED] || [];
+    rulesMatchMeaning = items[RULES_MATCH_MEANING] || DEFAULT_MATCH_MEANING;
+  } catch (e) {
+    console.error("loadRulesFromStorage failed", e);
+  }
+}
+// Note: storage.local.onChanged listener is registered later, after tabMap exists.
+
+// Render an icon at the given size with a solid background (color) and the
+// pattern character(s) on top in white. Returns ImageData suitable for
+// chrome.action.setIcon({imageData: ...}).
+function renderRuleIcon(pattern, size, bgColor) {
+  const key = `${size}:${bgColor}:${pattern}`;
+  if (ruleIconCache.has(key)) {
+    return ruleIconCache.get(key);
+  }
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext("2d");
+  // Background, with a small inset so the icon doesn't fully fill the toolbar cell.
+  ctx.fillStyle = bgColor;
+  // Use rounded rect for a softer look.
+  const radius = Math.max(1, Math.floor(size * 0.18));
+  roundRect(ctx, 0, 0, size, size, radius);
+  ctx.fill();
+
+  // Pattern text in white, e.g. "4", "6", "46", "?".
+  ctx.fillStyle = "#ffffff";
+  // Font size depends on pattern length.
+  const text = pattern || "?";
+  const fontSize = (text.length >= 2)
+      ? Math.floor(size * 0.62)
+      : Math.floor(size * 0.78);
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // Slight optical centering nudge.
+  ctx.fillText(text, size / 2, size / 2 + size * 0.04);
+
+  const imageData = ctx.getImageData(0, 0, size, size);
+  ruleIconCache.set(key, imageData);
+  return imageData;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Decide what color to tint the icon for the current main-domain address.
+// Returns one of: null (use stock icon), "green", "red", "gray" (no-op).
+function chooseRuleIconColor(addr) {
+  if (rulesCompiled.length === 0) return null;
+  const match = matchIP(addr, rulesCompiled);
+  const visual = statusToVisual(match, rulesMatchMeaning, rulesCompiled.length);
+  // We only override the icon for definite green/red. Dash/none -> stock icon.
+  if (visual.color === "green") return "green";
+  if (visual.color === "red") return "red";
+  return null;
+}
+
+const RULE_BG_GREEN = "#1a8a1a";
+const RULE_BG_RED = "#c01818";
+// === /RULES ===
 
 let debug = false;
 function debugLog() {
@@ -382,9 +467,11 @@ class TabInfo extends SaveableEntry {
     let has4 = false;
     let has6 = false;
     let tooltip = "";
+    let mainAddr = "";  // === RULES === main-domain IP for rule matching
     for (const [domain, d] of Object.entries(this.domains)) {
       if (domain == this.mainDomain) {
         pattern = d.addrVersion();
+        mainAddr = d.addr;  // === RULES ===
         if (IS_MOBILE) {
           tooltip = d.addr;  // Limited tooltip space on Android.
         } else {
@@ -400,6 +487,19 @@ class TabInfo extends SaveableEntry {
     if (has4) pattern += "4";
     if (has6) pattern += "6";
 
+    // === RULES ===
+    // Decide if we should override with a colored icon based on rule match.
+    const ruleColor = chooseRuleIconColor(mainAddr);
+    // Append the rule status to the tooltip so users know why it's colored.
+    if (ruleColor && rulesCompiled.length > 0) {
+      const match = matchIP(mainAddr, rulesCompiled);
+      const visual = statusToVisual(match, rulesMatchMeaning, rulesCompiled.length);
+      if (visual.tooltip) {
+        tooltip = tooltip ? `${tooltip}\n[rules] ${visual.tooltip}` : `[rules] ${visual.tooltip}`;
+      }
+    }
+    // === /RULES ===
+
     // Firefox might drop support for pageAction someday, but until then
     // let's keep the icon in the address bar.
     const action = chrome.pageAction || chrome.action;
@@ -414,17 +514,50 @@ class TabInfo extends SaveableEntry {
       this.save();
     }
 
+    // === RULES ===
+    // Compose a "pattern key" that includes the rule color so we redraw when
+    // the override status changes even though the IPvFoo pattern didn't.
+    const patternKey = `${pattern}|${ruleColor || "stock"}`;
+    // === /RULES ===
+
     // Don't waste time redrawing the same icon.
-    if (this.lastPattern != pattern) {
-      // Briefly defaults to "" on first boot.
-      const color = options[this.color] || "darkfg";
-      action.setIcon({
-        "tabId": this.id(),
-        "path": {
-          "16": iconPath(pattern, 16, color),
-          "32": iconPath(pattern, 32, color),
-        },
-      });
+    if (this.lastPattern != patternKey) {
+      // === RULES ===
+      if (ruleColor) {
+        const bg = (ruleColor === "green") ? RULE_BG_GREEN : RULE_BG_RED;
+        try {
+          action.setIcon({
+            "tabId": this.id(),
+            "imageData": {
+              "16": renderRuleIcon(pattern, 16, bg),
+              "32": renderRuleIcon(pattern, 32, bg),
+            },
+          });
+        } catch (e) {
+          console.error("renderRuleIcon failed, falling back to stock icon", e);
+          const color = options[this.color] || "darkfg";
+          action.setIcon({
+            "tabId": this.id(),
+            "path": {
+              "16": iconPath(pattern, 16, color),
+              "32": iconPath(pattern, 32, color),
+            },
+          });
+        }
+      } else {
+        // === /RULES ===
+        // Briefly defaults to "" on first boot.
+        const color = options[this.color] || "darkfg";
+        action.setIcon({
+          "tabId": this.id(),
+          "path": {
+            "16": iconPath(pattern, 16, color),
+            "32": iconPath(pattern, 32, color),
+          },
+        });
+        // === RULES ===
+      }
+      // === /RULES ===
       // Send icon to the popup window.
       popups.pushPattern(this.id(), pattern, this.color);
       action.setPopup({
@@ -434,7 +567,7 @@ class TabInfo extends SaveableEntry {
       if (action.show) {
         action.show(this.id());  // Firefox only
       }
-      this.lastPattern = pattern;
+      this.lastPattern = patternKey;  // === RULES === store the composite key
       this.save();
     }
   }
@@ -708,6 +841,10 @@ const storageSyncDebouncer = new StorageSyncDebouncer();
 const initStorage = async () => {
   await optionsReady;
 
+  // === RULES ===
+  await loadRulesFromStorage();
+  // === /RULES ===
+
   // These are be no-ops unless initStorage() is called manually.
   clearMap(tabMap);
   clearMap(requestMap);
@@ -735,6 +872,30 @@ const initStorage = async () => {
   }
 };
 const storageReady = initStorage();
+
+// === RULES ===
+// When the rules change in storage, reload our cache and refresh all tab icons.
+chrome.storage.local.onChanged.addListener((changes) => {
+  let changed = false;
+  if (changes[RULES_COMPILED]) {
+    rulesCompiled = changes[RULES_COMPILED].newValue || [];
+    ruleIconCache.clear();
+    changed = true;
+  }
+  if (changes[RULES_MATCH_MEANING]) {
+    rulesMatchMeaning = changes[RULES_MATCH_MEANING].newValue || DEFAULT_MATCH_MEANING;
+    changed = true;
+  }
+  if (changed) {
+    // Force every live tab to recompute its icon (lastPattern is invalidated by
+    // setting it to a sentinel that can't match any composite key).
+    for (const tabInfo of Object.values(tabMap)) {
+      tabInfo.lastPattern = "";
+      tabInfo.updateIcon();
+    }
+  }
+});
+// === /RULES ===
 
 // -- Popups --
 

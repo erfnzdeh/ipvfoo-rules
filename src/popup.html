@@ -70,6 +70,20 @@ img {
   text-align: right;
   min-width: var(--cache-min-width);
 }
+/* === RULES === */
+.ruleTd {
+  width: 1.4em;
+  text-align: center;
+  font-family: sans-serif;
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+}
+.ruleMatch { color: #1a8a1a; }
+.ruleNoMatch { color: #c01818; }
+.ruleNA { color: #888; }
+table.no-rules .ruleTd { display: none; }
+/* === /RULES === */
 .ip4 {
   color: #800000;
 }
@@ -193,6 +207,11 @@ img {
   .ip6 {
     color: #80ff80;
   }
+  /* === RULES === */
+  .ruleMatch { color: #4ade4a; }
+  .ruleNoMatch { color: #ff5050; }
+  .ruleNA { color: #999; }
+  /* === /RULES === */
   .highlight {
     background-color: #505030;
   }
@@ -227,6 +246,7 @@ img {
 </style>
 <script type="text/javascript" src="iputil.js"></script>
 <script type="text/javascript" src="common.js"></script>
+<script type="text/javascript" src="rules.js"></script>
 <script type="text/javascript" src="popup.js"></script>
 </head>
 <body>

@@ -27,9 +27,93 @@ const tabId = window.location.hash.substr(1);
 
 let table = null;
 
+// === RULES ===
+// Cached compiled rules + match meaning, kept in sync with chrome.storage.local.
+let rulesCompiled = [];
+let rulesMatchMeaning = DEFAULT_MATCH_MEANING;
+
+async function loadRulesFromStorage() {
+  const items = await chrome.storage.local.get([RULES_COMPILED, RULES_MATCH_MEANING]);
+  rulesCompiled = items[RULES_COMPILED] || [];
+  rulesMatchMeaning = items[RULES_MATCH_MEANING] || DEFAULT_MATCH_MEANING;
+  applyRulesClass();
+}
+
+function applyRulesClass() {
+  if (!table) return;
+  if (rulesCompiled.length === 0) {
+    table.classList.add("no-rules");
+  } else {
+    table.classList.remove("no-rules");
+  }
+}
+
+chrome.storage.local.onChanged.addListener((changes) => {
+  let changed = false;
+  if (changes[RULES_COMPILED]) {
+    rulesCompiled = changes[RULES_COMPILED].newValue || [];
+    changed = true;
+  }
+  if (changes[RULES_MATCH_MEANING]) {
+    rulesMatchMeaning = changes[RULES_MATCH_MEANING].newValue || DEFAULT_MATCH_MEANING;
+    changed = true;
+  }
+  if (changed) {
+    applyRulesClass();
+    redrawRuleColumn();
+  }
+});
+
+// Re-render only the .ruleTd cells in-place, without touching the rest of the table.
+function redrawRuleColumn() {
+  if (!table) return;
+  for (let tr = table.firstChild; tr; tr = tr.nextSibling) {
+    const cells = tr.getElementsByTagName("td");
+    // Layout: [domainTd, addrTd, cacheTd, ruleTd]. Replace the last cell.
+    const oldRule = cells[cells.length - 1];
+    if (!oldRule || !oldRule.classList.contains("ruleTd")) continue;
+    const addrTd = cells[1];
+    const addr = addrTd?.textContent || "";
+    const newRule = makeRuleTd(addr);
+    tr.replaceChild(newRule, oldRule);
+  }
+}
+
+function makeRuleTd(addr) {
+  const td = document.createElement("td");
+  td.className = "ruleTd";
+  const match = matchIP(addr, rulesCompiled);
+  const visual = statusToVisual(match, rulesMatchMeaning, rulesCompiled.length);
+  switch (visual.icon) {
+    case "check":
+      td.appendChild(document.createTextNode("\u2714"));  // ✔
+      td.classList.add("ruleMatch");
+      break;
+    case "x":
+      td.appendChild(document.createTextNode("\u2716"));  // ✖
+      td.classList.add("ruleNoMatch");
+      break;
+    case "dash":
+      td.appendChild(document.createTextNode("\u2014"));  // —
+      td.classList.add("ruleNA");
+      break;
+    case "none":
+    default:
+      // Empty cell; column will be hidden via .no-rules anyway.
+      break;
+  }
+  if (visual.tooltip) td.title = visual.tooltip;
+  return td;
+}
+// === /RULES ===
+
 window.onload = async function() {
   table = document.getElementById("addr_table");
   table.onmousedown = handleMouseDown;
+
+  // === RULES ===
+  await loadRulesFromStorage();
+  // === /RULES ===
 
   if (IS_MOBILE) {
     document.getElementById("mobile_footer").style.display = "flex";
@@ -363,10 +447,15 @@ function makeRow(isFirst, tuple) {
     cacheTd.style.paddingLeft = '0';
   }
 
+  // === RULES ===
+  const ruleTd = makeRuleTd(addr);
+  // === /RULES ===
+
   tr._domain = domain;
   tr.appendChild(domainTd);
   tr.appendChild(addrTd);
   tr.appendChild(cacheTd);
+  tr.appendChild(ruleTd);
   return tr;
 }
 

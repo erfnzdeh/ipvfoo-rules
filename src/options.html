@@ -80,6 +80,47 @@ limitations under the License.
     background-color: #fcc;
   }
 
+  /* === RULES === */
+  #rules_text {
+    width: 100%;
+    height: 240px;
+    box-sizing: border-box;
+    padding: 6pt;
+    border: 1px solid #888;
+    color: inherit;
+    background-color: inherit;
+    font-family: monospace;
+    font-size: 9pt;
+    resize: vertical;
+  }
+  #rules_status {
+    margin-top: 4pt;
+    color: #666;
+  }
+  #rules_status .ok { color: #080; }
+  #rules_status .warn { color: #a60; }
+  #rules_meaning {
+    margin-top: 6pt;
+  }
+  #rules_meaning label {
+    margin-right: 12pt;
+  }
+  #rules_skipped {
+    margin-top: 6pt;
+    font-family: monospace;
+    font-size: 9pt;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8f8f8;
+    border: 1px solid #ccc;
+    padding: 6pt;
+    color: #800;
+  }
+  #rules_buttons {
+    margin-top: 6pt;
+  }
+  /* === /RULES === */
+
   /* dark mode */
   @media (prefers-color-scheme: dark) {
     body {
@@ -95,14 +136,52 @@ limitations under the License.
     .url-field.invalid {
       background-color: #700;
     }
+    /* === RULES === */
+    #rules_status { color: #bbb; }
+    #rules_status .ok { color: #8f8; }
+    #rules_status .warn { color: #fc8; }
+    #rules_skipped {
+      background: #2a2a2a;
+      border-color: #555;
+      color: #fbb;
+    }
+    /* === /RULES === */
   }
   </style>
   <script src="iputil.js"></script>
   <script src="common.js"></script>
+  <script src="rules.js"></script>
   <script src="options.js"></script>
 </head>
 
 <body>
+  <!-- === RULES === -->
+  <div id="rules-section">
+    <h1>CIDR rules</h1>
+    Paste a list of IPv4 CIDRs (one per line). Each row in the popup will show
+    whether its IP matches.<br>
+    Accepted formats: <code>1.2.3.0/24</code>,
+    <code>no-route = 1.2.3.0/255.255.252.0</code>,
+    MikroTik <code>print</code> output, etc. Lines starting with
+    <code>#</code>, <code>//</code>, <code>;</code> are comments.
+    <br><br>
+    <textarea id="rules_text" spellcheck="false"
+              placeholder="Paste your CIDR ruleset here, e.g.&#10;217.198.190.0/24&#10;217.172.118.0/24&#10;..."></textarea>
+    <div id="rules_status">No rules loaded.</div>
+    <div id="rules_meaning">
+      <strong>When IP matches a rule, show:</strong>
+      <label><input type="radio" name="rules_meaning" value="match-check"> &#x2705; (default: "in my list")</label>
+      <label><input type="radio" name="rules_meaning" value="match-x"> &#x274C; ("in my no-route list")</label>
+    </div>
+    <div id="rules_skipped" style="display:none"></div>
+    <div id="rules_buttons">
+      <button id="rules_clear_btn">Clear rules</button>
+      <button id="rules_toggle_skipped_btn">Show skipped lines</button>
+    </div>
+  </div>
+  <br><hr><br>
+  <!-- === /RULES === -->
+
   <div id="lookup-provider">
     <h1>Lookup providers</h1>
     Use this service from the popup context menu:<br>

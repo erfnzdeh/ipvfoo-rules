@@ -1,15 +1,15 @@
 {
-  "name": "IPvFoo",
+  "name": "IPvFoo+Rules",
   "manifest_version": 3,
-  "version": "2.32",
-  "description": "Display the server IP address, with a realtime summary of IPv4, IPv6, and HTTPS information across all page elements.",
+  "version": "2.32.1",
+  "description": "IPvFoo fork: shows whether each row's IP matches your custom CIDR ruleset (\u2714/\u2716), with the toolbar icon color-coded by the main page IP's match status.",
   "homepage_url": "https://github.com/pmarks-net/ipvfoo",
   "icons": {
     "16": "icon16.png",
     "128": "icon128.png"
   },
   "background": {
-    "scripts": ["iputil.js", "common.js", "background.js"]
+    "scripts": ["iputil.js", "common.js", "rules.js", "background.js"]
   },
   "browser_specific_settings": {
     "gecko": {

@@ -130,6 +130,10 @@ window.onload = async () => {
     }
   });
 
+  // === RULES ===
+  initRulesSection();
+  // === /RULES ===
+
   document.getElementById("revert_btn").onclick = function() {
     revertNAT64();
     chrome.runtime.sendMessage({setStorageSyncDebounce: DEFAULT_SYNC_OPTIONS});
@@ -143,6 +147,123 @@ window.onload = async () => {
       window.close();
     }
   };
+
+  // === RULES ===
+  function initRulesSection() {
+    const ta = document.getElementById("rules_text");
+    const status = document.getElementById("rules_status");
+    const skippedDiv = document.getElementById("rules_skipped");
+    const toggleBtn = document.getElementById("rules_toggle_skipped_btn");
+    const clearBtn = document.getElementById("rules_clear_btn");
+    const meaningRadios = document.querySelectorAll("input[name='rules_meaning']");
+
+    let saveTimer = null;
+    let lastSkipped = [];
+
+    function renderStatus(meta) {
+      if (!meta || meta.valid === 0) {
+        status.textContent = "No rules loaded.";
+        toggleBtn.style.display = "none";
+        return;
+      }
+      const valid = meta.valid.toLocaleString();
+      const skipped = meta.skipped || 0;
+      const ts = meta.ts ? new Date(meta.ts).toLocaleString() : "";
+      let html = `<span class="ok">${valid} rules loaded</span>`;
+      if (skipped > 0) {
+        html += ` &middot; <span class="warn">${skipped} line${skipped === 1 ? "" : "s"} skipped</span>`;
+      }
+      if (ts) {
+        html += ` &middot; updated ${ts}`;
+      }
+      status.innerHTML = html;
+      toggleBtn.style.display = (skipped > 0) ? "" : "none";
+    }
+
+    function renderSkipped() {
+      if (!lastSkipped.length) {
+        skippedDiv.style.display = "none";
+        return;
+      }
+      const lines = lastSkipped.map(s =>
+        `line ${s.lineNum}: [${s.reason}] ${s.text}`
+      ).join("\n");
+      skippedDiv.textContent = lines;
+    }
+
+    function parseAndSave() {
+      const raw = ta.value;
+      const result = parseRules(raw);
+      lastSkipped = result.skipped;
+      const meta = {
+        total: result.total,
+        valid: result.valid,
+        skipped: result.skipped.length,
+        ts: Date.now(),
+      };
+      renderStatus(meta);
+      // Re-render skipped panel if it was open.
+      if (skippedDiv.style.display !== "none" && lastSkipped.length) {
+        renderSkipped();
+      } else if (!lastSkipped.length) {
+        skippedDiv.style.display = "none";
+      }
+      chrome.storage.local.set({
+        [RULES_RAW]: raw,
+        [RULES_COMPILED]: result.compiled,
+        [RULES_META]: meta,
+      });
+    }
+
+    function scheduleSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(parseAndSave, 400);
+    }
+
+    ta.addEventListener("input", scheduleSave);
+
+    for (const radio of meaningRadios) {
+      radio.addEventListener("change", () => {
+        chrome.storage.local.set({[RULES_MATCH_MEANING]: radio.value});
+      });
+    }
+
+    clearBtn.addEventListener("click", () => {
+      if (!confirm("Clear all CIDR rules?")) return;
+      ta.value = "";
+      lastSkipped = [];
+      skippedDiv.style.display = "none";
+      chrome.storage.local.remove([RULES_RAW, RULES_COMPILED, RULES_META]);
+      renderStatus(null);
+    });
+
+    toggleBtn.addEventListener("click", () => {
+      if (skippedDiv.style.display === "none") {
+        renderSkipped();
+        skippedDiv.style.display = "block";
+        toggleBtn.textContent = "Hide skipped lines";
+      } else {
+        skippedDiv.style.display = "none";
+        toggleBtn.textContent = "Show skipped lines";
+      }
+    });
+
+    // Initial load from storage.
+    chrome.storage.local.get([RULES_RAW, RULES_META, RULES_MATCH_MEANING], (items) => {
+      ta.value = items[RULES_RAW] || "";
+      renderStatus(items[RULES_META]);
+      const meaning = items[RULES_MATCH_MEANING] || DEFAULT_MATCH_MEANING;
+      for (const radio of meaningRadios) {
+        radio.checked = (radio.value === meaning);
+      }
+      // Re-parse from storage to populate lastSkipped (for the toggle button).
+      if (ta.value) {
+        const result = parseRules(ta.value);
+        lastSkipped = result.skipped;
+      }
+    });
+  }
+  // === /RULES ===
 
   // Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=1946972
   if (typeof browser != "undefined") {
