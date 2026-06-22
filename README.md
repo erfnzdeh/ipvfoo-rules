@@ -1,6 +1,8 @@
-# IPvFoo+Rules
+# CIDR Match — IP Range Checker
 
 A fork of [pmarks-net/ipvfoo](https://github.com/pmarks-net/ipvfoo) that adds **custom CIDR rule matching** to the popup and color-codes the toolbar icon based on whether the current page's IP is in your ruleset.
+
+> Available on the Chrome Web Store (listing pending review). Until then, use the [unpacked install](#install-unpacked) instructions below.
 
 ![Popup screenshot — every domain's IP matched against a custom CIDR ruleset, with the toolbar icon turned green because the main page IP is in the list](misc/screenshot_rules_popup.png)
 
@@ -23,7 +25,7 @@ All the original IPvFoo behavior is preserved — when no rules are configured, 
 ## What it adds
 
 - **Popup column.** Each row in the popup gets a 4th column showing **✔** (match), **✖** (no match), or **—** (not applicable — e.g. IPv6 row vs. IPv4-only rules). Hover for the matching CIDR and source line number.
-- **Toolbar icon coloring.** The toolbar icon turns solid **green** when the current page's main IP matches a rule, solid **red** when it doesn't. The IPv4/IPv6 protocol character (`4`/`6`/`46`/`?`) is preserved on top in white. When no rules are configured, the icon is the stock IPvFoo icon — unchanged.
+- **Toolbar icon coloring.** The toolbar icon turns solid **green** when the current page's main IP matches a rule, solid **red** when it doesn't. The IPv4/IPv6 protocol character (`4`/`6`/`46`/`?`) is preserved on top in white. When no rules are configured, the icon is the stock IPvFoo protocol indicator — unchanged.
 - **Options page section.** Paste your CIDR list once. Live "X rules loaded · Y skipped" status; expandable "skipped lines" panel for diagnosing rejected entries. Toggle whether "match" means **✔** or **✖**.
 - **Permissive parser.** Drop in almost anything that contains CIDRs and the parser figures it out (see [Rule format](#rule-format)).
 - **Zero network calls.** All matching happens locally in your browser. Nothing is logged, sent, or telemetry'd anywhere.
