@@ -12,6 +12,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+Modified 2026 by erfnzdeh (https://github.com/erfnzdeh/ipvfoo-rules).
+This file has been changed from the upstream IPvFoo original to add custom
+CIDR rule matching and rule-based toolbar icon coloring. Modifications are
+marked with "=== RULES ===" / "=== /RULES ===" blocks.
 */
 
 /*

@@ -1,15 +1,22 @@
-Privacy Policy
+Privacy Policy — CIDR Match — IP Range Checker
 
-IPvFoo has full access to your web traffic, as this is necessary to present
-the table of connection information.  All information is kept in RAM on your
-computer, and never transmitted over the network.
+This extension does not collect, transmit, sell, or share any personal data.
+There are no analytics, no telemetry, and no external servers operated by this
+extension.
 
-Technically there is one exception: if you use the "Look up on bgp.he.net"
-feature, your browser will navigate to a URL managed by Hurricane Electric,
-containing the selected domain name or IP address.
+To show the table of connection information, the extension observes the IP
+addresses your browser connects to as you load pages. All such information is
+kept in RAM on your computer and is never transmitted over the network by the
+extension.
 
+Any CIDR ruleset you paste into the options page is stored in
+chrome.storage.local on your own device only. It is not synced, uploaded, or
+sent anywhere.
 
-My other Chrome extensions do not use personal information at all:
-- Incognito Proxy
-- Endless Whisper
-- <pre> Line Wrapper
+Technically there is one exception: if you use the optional "Look up" context
+menu feature (inherited from IPvFoo), your browser will navigate to a URL
+managed by a third party (e.g. Hurricane Electric / bgp.he.net), containing the
+selected domain name or IP address. This only happens when you explicitly
+choose it.
+
+This extension is a derivative work based on IPvFoo (https://github.com/pmarks-net/ipvfoo).

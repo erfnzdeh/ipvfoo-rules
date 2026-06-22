@@ -1,0 +1,23 @@
+CIDR Match — IP Range Checker
+Copyright 2026 erfnzdeh — https://github.com/erfnzdeh/ipvfoo-rules
+
+This product is a derivative work based on IPvFoo.
+IPvFoo: Copyright (C) 2011-2017 Paul Marks — http://www.pmarks.net/
+Upstream project: https://github.com/pmarks-net/ipvfoo
+
+Licensed under the Apache License, Version 2.0 (the "License").
+A copy of the License is included in the LICENSE file.
+
+Modifications by erfnzdeh:
+  - Added custom IPv4 CIDR rule matching (src/rules.js).
+  - Added a popup column indicating whether each connection's IP matches
+    the user's ruleset.
+  - Added rule-based toolbar icon coloring.
+  - Added an options-page editor for the CIDR ruleset.
+All modified upstream files carry an in-file notice and mark changed
+regions with "=== RULES ===" / "=== /RULES ===" blocks.
+
+"IPvFoo" is the name of the upstream project and is referenced here only to
+describe the origin of this work, as permitted by Section 6 of the License.
+This derivative work is distributed under a different name and is not
+endorsed by or affiliated with the upstream author.

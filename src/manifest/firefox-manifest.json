@@ -1,9 +1,9 @@
 {
-  "name": "IPvFoo+Rules",
+  "name": "CIDR Match \u2014 IP Range Checker",
   "manifest_version": 3,
   "version": "2.32.1",
-  "description": "IPvFoo fork: shows whether each row's IP matches your custom CIDR ruleset (\u2714/\u2716), with the toolbar icon color-coded by the main page IP's match status.",
-  "homepage_url": "https://github.com/pmarks-net/ipvfoo",
+  "description": "Shows whether each connection's IP matches your custom CIDR ruleset, and color-codes the toolbar icon by the main page IP. Based on IPvFoo.",
+  "homepage_url": "https://github.com/erfnzdeh/ipvfoo-rules",
   "icons": {
     "16": "icon16.png",
     "128": "icon128.png"
@@ -11,9 +11,10 @@
   "background": {
     "scripts": ["iputil.js", "common.js", "rules.js", "background.js"]
   },
+  "_comment_gecko_id": "TODO: 'id' below belongs to upstream IPvFoo. Before publishing this fork to Firefox AMO, replace it with your own add-on ID (e.g. cidr-match@erfnzdeh).",
   "browser_specific_settings": {
     "gecko": {
-      "id": "ipvfoo@pmarks.net",
+      "id": "cidr-match@erfnzdeh",
       "strict_min_version": "115.0"
     },
     "gecko_android": {
