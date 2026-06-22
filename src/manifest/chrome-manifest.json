@@ -3,7 +3,7 @@
   "manifest_version": 3,
   "version": "2.32.1",
   "version_name": "2.32+rules.1",
-  "description": "Shows whether each connection's IP matches your custom CIDR ruleset, and color-codes the toolbar icon by the main page IP. Based on IPvFoo.",
+  "description": "Shows whether each connection's IP matches your custom CIDR ruleset, and color-codes the toolbar icon. Based on IPvFoo.",
   "homepage_url": "https://github.com/erfnzdeh/ipvfoo-rules",
   "icons": {
     "16": "icon16.png",
