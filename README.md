@@ -2,7 +2,7 @@
 
 A fork of [pmarks-net/ipvfoo](https://github.com/pmarks-net/ipvfoo) that adds **custom CIDR rule matching** to the popup and color-codes the toolbar icon based on whether the current page's IP is in your ruleset.
 
-> Available on the Chrome Web Store (listing pending review). Until then, use the [unpacked install](#install-unpacked) instructions below.
+> Available on the [Chrome Web Store](https://chromewebstore.google.com/detail/cidr-match-%E2%80%94-ip-range-che/pceglhjlcjljcbbdjphejdajiaiicgnc). Or use the [unpacked install](#install-unpacked) instructions below.
 
 ![Popup screenshot — every domain's IP matched against a custom CIDR ruleset, with the toolbar icon turned green because the main page IP is in the list](misc/screenshot_rules_popup.png)
 
